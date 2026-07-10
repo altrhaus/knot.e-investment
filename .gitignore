@@ -15,6 +15,7 @@ env/
 # --- Runtime output ---
 output/
 *.log
+research/cron.log
 data/holdings.local.json
 data/portfolio_state.json
 

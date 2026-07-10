@@ -103,6 +103,11 @@ python cli.py research LEU --dry-run
 `analyze` 출력 예시 (형식): `examples/analysis-2026-07-03.sample.json` 참고. 실제 리포트는
 `[보유 종목 알림] / [백팀 기회 신호] / [매크로 → 3층 구조] / [종합 판단]` 구조로 나온다.
 
+### 매일 리서치 자동화
+매일 자동으로 돌리는 두 가지 방법(로컬 cron / Claude 에이전트 스케줄)과 리포트 전달
+채널은 **[docs/DAILY_RESEARCH.md](docs/DAILY_RESEARCH.md)** 참고. 로컬은 `scripts/run_daily.sh`,
+리포트는 `research/YYYY-MM-DD.md` 로 쌓인다.
+
 ---
 
 ## 프로젝트 구조

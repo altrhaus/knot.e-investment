@@ -192,7 +192,7 @@ def cmd_research(orch: Orchestrator, args):
     if snap is not None:
         _print(Panel(render_quant(snap), border_style="blue", title="정량") if RICH
                else render_quant(snap))
-    if args.dry_run or (result.data is None and not orch.config.has_claude and result.error is None):
+    if args.dry_run or (result.data is None and not orch.config.has_claude):
         _dump_dryrun(result)
         return 0
     if not result.ok:
@@ -216,8 +216,8 @@ def cmd_daily(orch: Orchestrator, args):
     _print_quant_table(snaps, orch)
     result, _ = orch.daily_research(briefing=briefing, date=args.date or "",
                                     dry_run=args.dry_run, notify=args.notify, snaps=snaps)
-    if args.dry_run or (result.data is None and not orch.config.has_claude and result.error is None):
-        _print("\n[dim]※ Claude 미연결/–-dry-run — 정량 스캔은 위에 표시됨. 아래는 조립된 프롬프트.[/dim]"
+    if args.dry_run or (result.data is None and not orch.config.has_claude):
+        _print("\n[dim]※ Claude 미연결/--dry-run — 정량 스캔은 위에 표시됨. 아래는 조립된 프롬프트.[/dim]"
                if RICH else "\n※ 정량 스캔은 위에 표시됨. 아래는 조립된 프롬프트.")
         _dump_dryrun(result)
         return 0
