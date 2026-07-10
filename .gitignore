@@ -1,0 +1,25 @@
+# --- Secrets ---
+.env
+*.key
+config/settings.local.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# --- Runtime output ---
+output/
+*.log
+data/holdings.local.json
+data/portfolio_state.json
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,60 @@
+{
+  "_note": "보유 종목. shares/avg_price는 Tara가 실제 값으로 채운다(null이면 손익 계산은 생략, 시세/시그널은 정상 동작). team: 청팀=3층 성장주, 백팀=2층 실물인프라.",
+  "updated": "2026-07-10",
+  "base_currency": "USD",
+  "cash": {
+    "layer": 1,
+    "amount": null,
+    "note": "1층 실탄 — 실제 현금 비중 입력 (급락 시 백팀 매수 여력)"
+  },
+  "positions": [
+    {
+      "ticker": "NVDA",
+      "name": "NVIDIA",
+      "layer": 3,
+      "team": "청팀",
+      "role": "core",
+      "shares": null,
+      "avg_price": null,
+      "thesis": "AI 학습(training) 표준 설계자 (원칙 45). 코어 Hold.",
+      "watch": "맞춤형 추론 ASIC(Broadcom Jalapeño, Anthropic-삼성) 경쟁 누적 — 추론 시장 표준 분산 추적.",
+      "watch_principles": ["45"]
+    },
+    {
+      "ticker": "PLTR",
+      "name": "Palantir",
+      "layer": 3,
+      "team": "청팀",
+      "role": "core",
+      "shares": null,
+      "avg_price": null,
+      "thesis": "AI 오케스트레이션/통제 레이어 해자 (원칙 46).",
+      "watch": "일부 정부 고객 오픈소스 AI 이전 신호 — 통제 레이어 유효성 모니터링.",
+      "watch_principles": ["46"]
+    },
+    {
+      "ticker": "PL",
+      "name": "Planet Labs",
+      "layer": 3,
+      "team": "청팀",
+      "role": "growth",
+      "shares": null,
+      "avg_price": null,
+      "thesis": "위성 지구관측 데이터 성장주. 할인율(금리) 민감.",
+      "watch": "밸류에이션 압박 / 희석(유상증자) 리스크.",
+      "watch_principles": []
+    },
+    {
+      "ticker": "RDW",
+      "name": "Redwire",
+      "layer": 3,
+      "team": "청팀",
+      "role": "growth",
+      "shares": null,
+      "avg_price": null,
+      "thesis": "우주 인프라 성장주. 고베타.",
+      "watch": "밸류에이션 압박 / 현금흐름·희석 리스크.",
+      "watch_principles": []
+    }
+  ]
+}

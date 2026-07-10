@@ -1,0 +1,8 @@
+# knot.e — asset management orchestrator
+# Python 3.10+
+
+anthropic>=0.40.0        # Claude API — knot.e의 판단 엔진 (news → framework → action)
+yfinance>=0.2.40         # 주가/재무 데이터 (무료, API 키 불필요)
+python-dotenv>=1.0.0     # .env 에서 키 로드
+rich>=13.7.0             # 터미널 대시보드/리포트 출력
+requests>=2.31.0         # 텔레그램 알림 등 HTTP

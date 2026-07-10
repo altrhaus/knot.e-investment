@@ -1,0 +1,19 @@
+{
+  "_note": "knot.e 런타임 설정. 로컬 오버라이드는 config/settings.local.json (git 무시).",
+  "model": "claude-sonnet-5",
+  "target_allocation": {
+    "layer1_cash": [0.20, 0.30],
+    "layer2_backteam": [0.30, 0.40],
+    "layer3_blueteam": [0.30, 0.40]
+  },
+  "w12_tier1_threshold": 5,
+  "technical_trigger": {
+    "rsi_below": 35,
+    "ma_support_days": 120
+  },
+  "paths": {
+    "frameworks_dir": "frameworks",
+    "holdings": "data/holdings.json",
+    "watchlist": "data/watchlist.json"
+  }
+}

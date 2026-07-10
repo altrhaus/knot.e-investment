@@ -1,0 +1,54 @@
+{
+  "_note": "2층 백팀 편입 후보. knot.e가 W12 채점 + 기술적 매수구간을 감시하는 대상. w12는 마지막 채점 결과 캐시(수동/자동 갱신).",
+  "updated": "2026-07-10",
+  "candidates": [
+    {
+      "ticker": "BWXT",
+      "name": "BWX Technologies",
+      "sector": "원자력 부품/해군 원자로",
+      "team": "백팀",
+      "thesis": "원자력 르네상스·방산 구조적 수요. 실물 인허가 해자.",
+      "w12": null,
+      "tech_trigger": "RSI 35↓ + 120일선 지지"
+    },
+    {
+      "ticker": "MP",
+      "name": "MP Materials",
+      "sector": "희토류 채굴/정제",
+      "team": "백팀",
+      "thesis": "희토류 공급망 자립(원칙 33/34). 에너지·원자재 차익실현 시 눌림 = 매수 기회 관찰.",
+      "w12": null,
+      "tech_trigger": "RSI 35↓ + 120일선 지지"
+    },
+    {
+      "ticker": "VRT",
+      "name": "Vertiv Holdings",
+      "sector": "데이터센터 전력·냉각",
+      "team": "백팀",
+      "thesis": "AI 전력 인프라 수요.",
+      "w12": null,
+      "tech_trigger": "RSI 35↓ + 120일선 지지",
+      "caution": "데이터센터 투자 둔화 신호(QTS 버지니아 프로젝트 중단) 확인 필요."
+    },
+    {
+      "ticker": "LEU",
+      "name": "Centrus Energy",
+      "sector": "우라늄 농축(HALEU)",
+      "team": "백팀",
+      "thesis": "SMR·원자력 연료 구조적 수요. DOE 계약 지위.",
+      "w12": null,
+      "tech_trigger": "RSI 35↓ + 120일선 지지",
+      "caution": "지정학 프리미엄 소멸 시 단기 역풍 — 구조적 수요는 유지."
+    },
+    {
+      "ticker": "UUUU",
+      "name": "Energy Fuels",
+      "sector": "우라늄/희토류",
+      "team": "백팀",
+      "thesis": "우라늄 + 희토류 이중 노출.",
+      "w12": null,
+      "tech_trigger": "RSI 35↓ + 120일선 지지",
+      "caution": "에너지·원자재 급락 시 단기 역풍."
+    }
+  ]
+}
