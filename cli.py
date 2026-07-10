@@ -22,7 +22,7 @@ from pathlib import Path
 
 from knot.orchestrator import Orchestrator
 from knot.portfolio import LAYER_NAMES
-from knot.render import render_analysis, render_w12
+from knot.render import render_analysis, render_w12, render_daily, render_quant
 
 try:
     from rich.console import Console
@@ -183,23 +183,91 @@ def cmd_analyze(orch: Orchestrator, args):
     return 0
 
 
-# ── score ──
-def cmd_score(orch: Orchestrator, args):
-    _rule(f"W12 백팀 자격 채점 — {args.ticker.upper()}")
-    result = orch.score_ticker(args.ticker, dry_run=args.dry_run)
+# ── research (정량+정성 통합) ──
+def cmd_research(orch: Orchestrator, args):
+    ticker = args.ticker.upper()
+    _rule(f"종목 리서치 (정량+정성) — {ticker}")
+    result, snap = orch.research_ticker(ticker, dry_run=args.dry_run)
+    # 정량 스코어카드는 로컬 계산 — Claude 없이도 항상 표시
+    if snap is not None:
+        _print(Panel(render_quant(snap), border_style="blue", title="정량") if RICH
+               else render_quant(snap))
     if args.dry_run or (result.data is None and not orch.config.has_claude and result.error is None):
         _dump_dryrun(result)
         return 0
     if not result.ok:
-        _print(f"[red]채점 실패: {result.error}[/red]" if RICH else f"채점 실패: {result.error}")
+        _print(f"[red]정성 채점 실패: {result.error}[/red]" if RICH else f"정성 채점 실패: {result.error}")
         if result.raw:
             _print(result.raw)
         return 1
     if args.json:
         print(json.dumps(result.data, ensure_ascii=False, indent=2))
         return 0
-    _print(Panel(render_w12(result.data), border_style="cyan") if RICH else render_w12(result.data))
+    _print(Panel(render_w12(result.data), border_style="cyan", title="정성+통합") if RICH
+           else render_w12(result.data))
     return 0
+
+
+# ── daily (매일 리서치: 정량 스캔 + 시황 해석) ──
+def cmd_daily(orch: Orchestrator, args):
+    briefing = _read_source(args.source, args.text) if (args.source or args.text) else ""
+    _rule("데일리 리서치 — 정량 스캔 + 시황 해석")
+    snaps = orch.quant_scan()
+    _print_quant_table(snaps, orch)
+    result, _ = orch.daily_research(briefing=briefing, date=args.date or "",
+                                    dry_run=args.dry_run, notify=args.notify, snaps=snaps)
+    if args.dry_run or (result.data is None and not orch.config.has_claude and result.error is None):
+        _print("\n[dim]※ Claude 미연결/–-dry-run — 정량 스캔은 위에 표시됨. 아래는 조립된 프롬프트.[/dim]"
+               if RICH else "\n※ 정량 스캔은 위에 표시됨. 아래는 조립된 프롬프트.")
+        _dump_dryrun(result)
+        return 0
+    if not result.ok:
+        _print(f"[red]데일리 리서치 실패: {result.error}[/red]" if RICH else f"실패: {result.error}")
+        if result.raw:
+            _print(result.raw)
+        return 1
+    report = render_daily(result.data)
+    if args.json:
+        print(json.dumps(result.data, ensure_ascii=False, indent=2))
+    else:
+        _print(Panel(report, title="knot.e 데일리 리서치", border_style="green") if RICH else report)
+    if args.out:
+        Path(args.out).write_text(report, encoding="utf-8")
+        _print(f"[dim]저장됨: {args.out}[/dim]" if RICH else f"저장됨: {args.out}")
+    if args.notify:
+        _print("\n[dim]텔레그램 발송 시도됨[/dim]" if RICH else "\n(텔레그램 발송 시도됨)")
+    return 0
+
+
+def _print_quant_table(snaps, orch):
+    holds = {t.upper() for t in orch.portfolio.tickers()}
+    if RICH:
+        t = Table(box=None, title="정량 스캔")
+        t.add_column("티커", style="bold")
+        t.add_column("구분")
+        t.add_column("현재가", justify="right")
+        t.add_column("RSI", justify="right")
+        t.add_column("120MA%", justify="right")
+        t.add_column("추세")
+        t.add_column("트리거")
+        for tk, s in snaps.items():
+            tag = "보유" if tk.upper() in holds else "백팀후보"
+            if not s.ok:
+                t.add_row(tk, tag, "—", "—", "—", "[dim]데이터없음[/dim]", "")
+                continue
+            trig = f"[green]🎯 {s.trigger_desc}[/green]" if s.trigger_hit else ""
+            t.add_row(tk, tag, f"{s.price:,.2f}" if s.price else "—",
+                      str(s.rsi14) if s.rsi14 is not None else "—",
+                      f"{s.pct_vs_sma120:+.1f}" if s.pct_vs_sma120 is not None else "—",
+                      s.trend, trig)
+        _c.print(t)
+    else:
+        for tk, s in snaps.items():
+            print("  " + s.summary_line())
+    failed = [tk for tk, s in snaps.items() if not s.ok]
+    if failed:
+        _print(f"[yellow]정량 데이터 없음: {', '.join(failed)} (로컬 실행 시 정상)[/yellow]"
+               if RICH else f"정량 데이터 없음: {', '.join(failed)}")
 
 
 # --- helpers ---
@@ -256,17 +324,28 @@ def main(argv=None):
     pa.add_argument("--dry-run", action="store_true", help="API 없이 프롬프트만 확인")
     pa.add_argument("--json", action="store_true", help="원본 JSON 출력")
 
-    ps = sub.add_parser("score", help="W12 백팀 자격 채점")
-    ps.add_argument("ticker", help="티커 (예: LEU)")
-    ps.add_argument("--dry-run", action="store_true", help="API 없이 프롬프트만 확인")
-    ps.add_argument("--json", action="store_true", help="원본 JSON 출력")
+    for name in ("research", "score"):  # score = research 별칭
+        pr = sub.add_parser(name, help="종목 리서치 (정량 기술적 + 정성 W12 통합)")
+        pr.add_argument("ticker", help="티커 (예: LEU)")
+        pr.add_argument("--dry-run", action="store_true", help="API 없이 프롬프트만 확인")
+        pr.add_argument("--json", action="store_true", help="원본 JSON 출력")
+
+    pd = sub.add_parser("daily", help="매일 리서치 — 정량 스캔 + 시황 해석")
+    pd.add_argument("source", nargs="?", help="(선택) 시황 브리핑 파일 또는 '-'(표준입력)")
+    pd.add_argument("--text", help="(선택) 시황 텍스트 직접 전달")
+    pd.add_argument("--date", help="날짜 (예: 2026-07-10)")
+    pd.add_argument("--notify", action="store_true", help="결과를 텔레그램으로 발송")
+    pd.add_argument("--out", help="리포트를 파일로 저장 (예: output/2026-07-10.txt)")
+    pd.add_argument("--dry-run", action="store_true", help="API 없이 정량 스캔 + 프롬프트만")
+    pd.add_argument("--json", action="store_true", help="원본 JSON 출력")
 
     args = parser.parse_args(argv)
     orch = Orchestrator.build()
 
     dispatch = {
         "doctor": cmd_doctor, "portfolio": cmd_portfolio, "watchlist": cmd_watchlist,
-        "analyze": cmd_analyze, "score": cmd_score,
+        "analyze": cmd_analyze, "research": cmd_research, "score": cmd_research,
+        "daily": cmd_daily,
     }
     return dispatch[args.cmd](orch, args) or 0
 

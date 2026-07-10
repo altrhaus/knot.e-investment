@@ -47,6 +47,23 @@ class MarketData:
     def quotes(self, tickers: list[str], with_fundamentals: bool = False) -> dict[str, Quote]:
         return {t: self.quote(t, with_fundamentals) for t in tickers}
 
+    def history_closes(self, ticker: str, period: str = "1y") -> list[float] | None:
+        """종가 시계열(list[float]). 정량 엔진의 입력. 실패 시 None."""
+        if self.provider != "yfinance":
+            return None
+        try:
+            import yfinance as yf
+        except ImportError:
+            return None
+        try:
+            hist = yf.Ticker(ticker).history(period=period, auto_adjust=True)
+            if hist is None or hist.empty or "Close" not in hist:
+                return None
+            closes = [float(x) for x in hist["Close"].tolist() if x == x]  # NaN 제거
+            return closes or None
+        except Exception:
+            return None
+
     # --- yfinance 구현 ---
     def _yf_quote(self, ticker: str, with_fundamentals: bool) -> Quote:
         try:

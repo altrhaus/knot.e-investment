@@ -13,10 +13,15 @@ holdings ────┼─▶  knot.e  ─▶  Claude(정성판단)  ─▶  �
 ---
 
 ## 30초 요약: 지금 뭘 할 수 있나
-- `python cli.py analyze <브리핑>` → **뉴스를 프레임워크로 해석한 리포트**를 만든다 (핵심 기능)
-- `python cli.py score LEU` → 종목이 **2층 백팀 자격(W12 6필터)**이 되는지 채점
+- `python cli.py daily` → **정량 스캔 + 시황 해석을 합친 데일리 리서치** (매일 리서치)
+- `python cli.py research LEU` → **정량(RSI·이평선·트리거) + 정성(W12 백팀 자격)을 통합**한 종목 판단
+- `python cli.py analyze <브리핑>` → 뉴스를 프레임워크로 해석한 리포트
 - `python cli.py portfolio` / `watchlist` → 보유·후보 종목 + 실시간 시세를 층별로 표시
 - `python cli.py doctor` → 설정/키가 준비됐는지 점검
+
+> **정량 + 정성을 같이 본다.** knot.e는 숫자(RSI·이평선·매출성장·FCF·P/S)와
+> 프레임워크 해석(원칙·W12·3층)을 한 판단으로 합친다.
+> 예: `LEU: W12 5/6(정성 Tier1) + RSI 32·120일선 지지(정량 트리거) → 분할매수 검토`
 
 ---
 
@@ -77,19 +82,22 @@ python cli.py doctor
 python cli.py portfolio
 python cli.py watchlist
 
+# ── 매일 리서치 (정량 스캔 + 시황 해석) ──
+python cli.py daily                                  # 정량 스캔만으로도 동작
+python cli.py daily examples/briefing-2026-07-03.txt --date 2026-07-10
+pbpaste | python cli.py daily - --notify --out output/2026-07-10.txt
+
+# ── 종목 리서치 (정량 기술적 + 정성 W12 통합) ──
+python cli.py research LEU
+python cli.py research BWXT --json
+
 # ── 핵심: 시황 브리핑 해석 ──
 python cli.py analyze examples/briefing-2026-07-03.txt --date 2026-07-03
-# 텔레그램으로 붙여넣기 → 파일 없이 표준입력:
 pbpaste | python cli.py analyze -            # (맥: 클립보드를 바로)
-# 결과를 폰으로:
-python cli.py analyze examples/briefing-2026-07-03.txt --notify
 
-# ── 백팀 자격 채점 ──
-python cli.py score LEU
-python cli.py score BWXT --json
-
-# 키 없이 파이프라인만 확인 (프롬프트 조립 검증)
-python cli.py analyze examples/briefing-2026-07-03.txt --dry-run
+# 키 없이 파이프라인만 확인 (정량 스캔 + 프롬프트 조립 검증)
+python cli.py daily --dry-run
+python cli.py research LEU --dry-run
 ```
 
 `analyze` 출력 예시 (형식): `examples/analysis-2026-07-03.sample.json` 참고. 실제 리포트는
@@ -100,14 +108,15 @@ python cli.py analyze examples/briefing-2026-07-03.txt --dry-run
 ## 프로젝트 구조
 ```
 knot.e-investment/
-├── cli.py                  # 진입점 (doctor/portfolio/watchlist/analyze/score)
+├── cli.py                  # 진입점 (doctor/portfolio/watchlist/analyze/research/daily)
 ├── knot/                   # 오케스트레이터 코어
 │   ├── orchestrator.py     #   도구 조율
 │   ├── analyst.py          #   Claude 판단 엔진
 │   ├── prompts.py          #   프레임워크 주입 프롬프트
 │   ├── frameworks.py       #   frameworks/ 로더
 │   ├── portfolio.py        #   holdings/watchlist
-│   ├── market_data.py      #   시세/재무 (yfinance)
+│   ├── market_data.py      #   시세/재무/가격히스토리 (yfinance)
+│   ├── quant.py            #   정량 엔진 — RSI·이평선·추세·매수트리거
 │   ├── notify.py           #   텔레그램
 │   └── render.py           #   판단 → 리포트
 ├── frameworks/             # ★ 판단 렌즈 (원칙·W12·3층·유동성지도)
@@ -123,7 +132,8 @@ knot.e-investment/
 ## 로드맵
 - ✅ **Phase 1** 골격 — frameworks/ · holdings · 시세 · CLI
 - ✅ **Phase 2** 두뇌 — Claude 연동 · 브리핑→프레임워크 해석 · W12 채점
-- ⬜ **Phase 3** proactive — 텔레그램 알림 + 기술적 조건 스케줄러(RSI/이평선)
+- ✅ **Phase 2.5** 정량+정성 — 정량 엔진(RSI·이평선·트리거) · `research` 통합 판단 · `daily` 데일리 리서치
+- 🚧 **Phase 3** proactive — 텔레그램 알림 + **매일 리서치 자동 실행**(스케줄 트리거)
 - ⬜ **Phase 4** 실행 — QuantConnect(MCP) 연동, 페이퍼 검증 후 실계좌
 
 ## 원칙

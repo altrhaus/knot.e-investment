@@ -39,14 +39,22 @@ class Analyst:
         system, user = prompts.build_analyst_messages(frameworks, portfolio, briefing, date)
         return self._run(system, user, dry_run)
 
-    # --- W12 채점 ---
+    # --- W12 채점 (+ 정량/정성 통합) ---
     def score_w12(self, frameworks: str, ticker: str, name: str, context: str,
-                  fundamentals: str, dry_run: bool = False) -> AnalystResult:
-        system, user = prompts.build_w12_messages(frameworks, ticker, name, context, fundamentals)
+                  fundamentals: str, technicals: str = "(기술적 데이터 미포함)",
+                  dry_run: bool = False) -> AnalystResult:
+        system, user = prompts.build_w12_messages(frameworks, ticker, name, context,
+                                                  fundamentals, technicals)
         return self._run(system, user, dry_run)
 
+    # --- 데일리 리서치 (정량 스캔 + 시황 해석) ---
+    def daily_research(self, frameworks: str, portfolio: str, quant_scan: str,
+                       briefing: str, date: str, dry_run: bool = False) -> AnalystResult:
+        system, user = prompts.build_daily_messages(frameworks, portfolio, quant_scan, briefing, date)
+        return self._run(system, user, dry_run, max_tokens=3500)
+
     # --- 공통 실행 ---
-    def _run(self, system: str, user: str, dry_run: bool) -> AnalystResult:
+    def _run(self, system: str, user: str, dry_run: bool, max_tokens: int | None = None) -> AnalystResult:
         if dry_run or not self.enabled:
             return AnalystResult(
                 ok=False,
@@ -62,7 +70,7 @@ class Analyst:
             client = anthropic.Anthropic(api_key=self.api_key)
             resp = client.messages.create(
                 model=self.model,
-                max_tokens=self.max_tokens,
+                max_tokens=max_tokens or self.max_tokens,
                 system=system,
                 messages=[{"role": "user", "content": user}],
             )

@@ -34,7 +34,8 @@ knot.e는 **직접 만들지 않고 조율한다.** 백테스트·차트·크롤
 | 정성 판단 | `knot/analyst.py` + `knot/prompts.py` | Claude API — 뉴스 해석 / W12 채점 |
 | 프레임워크 | `knot/frameworks.py` + `frameworks/` | 판단 렌즈(원칙·W12·3층·유동성지도) |
 | 포트폴리오 | `knot/portfolio.py` + `data/` | holdings/watchlist 상태 |
-| 정량 데이터 | `knot/market_data.py` | 시세·재무(yfinance) |
+| 정량 데이터 | `knot/market_data.py` | 시세·재무·가격히스토리(yfinance) |
+| 정량 엔진 | `knot/quant.py` | RSI·이평선·추세·모멘텀·매수 트리거 |
 | 알림 | `knot/notify.py` | 텔레그램 |
 | 렌더 | `knot/render.py` | 판단 → 리포트/알림 |
 | 진입점 | `cli.py` | doctor/portfolio/watchlist/analyze/score |
@@ -49,6 +50,33 @@ knot.e의 차별점. 단순 감성분석이 아니라 **Tara의 프레임워크�
    → 렌더 → 데일리 브리핑 리포트 (+ 선택: 텔레그램)
 ```
 예시 입력/출력: `examples/briefing-2026-07-03.txt`, `examples/analysis-2026-07-03.sample.json`
+
+## 4.5 정량 + 정성 통합 (핵심 설계 원칙)
+knot.e의 모든 종목 판단은 **정량과 정성을 한 판단으로 합친다.**
+- **정량(quant):** `quant.py` 가 RSI(14)·이평선(20/50/120/200)·추세·모멘텀·변동성을
+  계산하고 `RSI≤35 + 120일선 지지` 같은 **매수 트리거**를 판정. 로컬 계산이라 Claude 없이도 동작.
+- **정성(qual):** Claude 가 W12 6필터로 백팀 자격(Tier)을 채점하고 프레임워크로 해석.
+- **통합:** Claude 가 둘을 교차해 액션을 낸다.
+  예) `LEU: W12 5/6(정성 Tier1) + RSI 32·120일선 지지(정량 트리거) → 분할매수 검토`.
+  명령: `research <ticker>`.
+
+## 4.6 매일 리서치 (daily)
+포트폴리오 전체를 매일 자동으로 본다.
+```
+보유 + 백팀 후보 전 종목
+   → 정량 스캔(quant): RSI/이평선/추세/트리거 일괄 계산
+   → (선택) 오늘의 시황 리서치/뉴스 결합
+   → Claude: 정량 신호 + 시황을 프레임워크로 해석
+   → 데일리 리포트: 정량 스캔 신호 / 보유 알림 / 백팀 기회 / 매크로 / 우선순위 액션
+```
+명령: `daily [브리핑] [--notify] [--out FILE]`. 정량 스캔은 로컬이라 키 없이도 나오고,
+시황 해석은 Claude 가 붙는다.
+
+### "Claude가 리서치한다"의 분업
+- **시황/뉴스 리서치**(오늘 무슨 일이 있었나)는 웹 리서치가 필요 → **에이전트(Claude Code)**의
+  영역. 스케줄 트리거가 매일 에이전트를 깨워 웹 리서치 → 프레임워크 해석 → 리포트 전달.
+- **정량 스캔·프레임워크 채점**은 앱(`quant.py` + Claude API)의 영역.
+- 앱만으로 자동화할 땐 시황을 Tara가 붙여넣거나 종목 뉴스(yfinance)로 대체.
 
 ## 5. 백팀 발굴 시나리오 (목표 워크플로우)
 1. News → 에너지/원자력/희토류 뉴스에서 새 종목 감지
@@ -71,7 +99,8 @@ knot.e의 차별점. 단순 감성분석이 아니라 **Tara의 프레임워크�
 ## 8. 로드맵
 - **Phase 1 (완료):** 골격 — frameworks/, holdings, 시세, CLI 대시보드.
 - **Phase 2 (완료):** 두뇌 — Claude 연동, 브리핑→프레임워크 해석, W12 채점.
-- **Phase 3:** proactive — 텔레그램 알림 + 기술적 조건 스케줄러(RSI/이평선).
+- **Phase 2.5 (완료):** 정량+정성 — 정량 엔진(RSI/이평선/트리거), `research` 통합 판단, `daily` 데일리 리서치.
+- **Phase 3:** proactive — 텔레그램 알림 + **매일 리서치 자동 실행**(스케줄 트리거로 에이전트가 웹 리서치→리포트).
 - **Phase 4 (선택):** 실행 — QuantConnect 등 MCP 실행 엔진 연동(페이퍼 후 실계좌).
 
 ## 9. MCP 진화 경로
