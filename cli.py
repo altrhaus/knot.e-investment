@@ -8,6 +8,7 @@
   python cli.py analyze examples/briefing-2026-07-03.txt --date 2026-07-03
   cat briefing.txt | python cli.py analyze -     # 표준입력으로 붙여넣기
   python cli.py score LEU                        # W12 백팀 자격 채점
+  python cli.py nasdaq --serve                   # AMQS-NDX 나스닥 대시보드(웹페이지)
 옵션:
   --dry-run   API 호출 없이 조립된 프롬프트만 확인 (키 없어도 동작)
   --notify    결과를 텔레그램으로 발송 (analyze)
@@ -308,6 +309,88 @@ def _range(r) -> str:
     return f"{r[0]*100:.0f}–{r[1]*100:.0f}%"
 
 
+# ── nasdaq (AMQS-NDX 대시보드) ──
+def cmd_nasdaq(orch: Orchestrator, args):
+    from knot.amqs import AmqsNdx
+    from knot.amqs_page import render_page
+
+    engine = AmqsNdx(demo=args.demo)
+    if args.serve:
+        from knot.amqs_server import serve
+        if args.refresh:
+            engine.snapshot(refresh=True)  # 첫 요청 전에 미리 계산
+        serve(engine, host=args.host, port=args.port)
+        return 0
+
+    snap = engine.snapshot(refresh=args.refresh)
+    if args.json:
+        print(json.dumps(snap, ensure_ascii=False, indent=2))
+        return 0
+    if args.out:
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(render_page(snap, live=False), encoding="utf-8")
+        _print(f"✅ 페이지 저장: {out}")
+        return 0
+
+    r, m = snap["regime"], snap["macro"]
+    _rule(f"AMQS-NDX — 나스닥 4-Factor 모멘텀 ({snap['generated_at']})")
+    if snap["demo"]:
+        _print("[yellow]데모 모드 — 합성 가격입니다. 실제 시장 데이터가 아닙니다.[/yellow]"
+               if RICH else "데모 모드 — 합성 가격입니다.")
+    for w in snap["warnings"]:
+        _print(f"[red]⚠ {w}[/red]" if RICH else f"⚠ {w}")
+
+    color = {"Risk-On": "green", "Neutral": "yellow", "Risk-Off": "red"}.get(r["regime"], "white")
+    head = (f"레짐 [{color}]{r['regime']}[/{color}] · 레짐 배수 {r['exposure']:.0%} · "
+            f"QQQ {_num_str(r['price'])} (200MA {_num_str(r['sma200'])}) · "
+            f"VIX {_num_str(r['vix'], 1)} · "
+            f"{m['labels'].get('rate', '금리 —')}")
+    _print(head if RICH else head.replace(f"[{color}]", "").replace(f"[/{color}]", ""))
+    _print(f"[dim]{r['verdict']}[/dim]" if RICH else r["verdict"])
+    z, f = snap["sizing"], snap["falsification"]
+    _print(f"모델 투자비중 {snap['gross_pct']:.1%} · 현금 {snap['cash_pct']:.1%} · "
+           f"종목당 캡 {z['position_cap']:.1%}(1/{z['divisor']} 켈리, 풀 {z['full_kelly']:.1%}) · "
+           f"반증 조건 {f['hits']}/{len(f['checks'])}"
+           + (" ⚠ 배분 절반 구간" if f["halve"] else ""))
+    _print()
+
+    if RICH:
+        t = Table(title=f"Top-{snap['rules']['top_n']} (현금 {snap['cash_pct']:.1%})")
+        for col in ("#", "티커", "이름", "유형", "점수", "12-1M", "RS63", "신호", "비중"):
+            t.add_column(col)
+        for x in snap["top"]:
+            t.add_row(str(x["pos"]), x["ticker"], x["name"], x.get("archetype", "—"),
+                      f"{x['total']:.1f}", _pct_str(x["m12_1"]), _pct_str(x["rs63"]),
+                      x["signal"], f"{x['weight']:.1%}")
+        _c.print(t)
+    else:
+        for x in snap["top"]:
+            print(f"{x['pos']:>2} {x['ticker']:<6} {x.get('archetype','—')} "
+                  f"{x['signal']:<9} {x['total']:>5.1f} {x['weight']:>6.1%} {x['segment']}")
+        print(f"현금 {snap['cash_pct']:.1%}")
+
+    if snap.get("exits"):
+        ex = ", ".join(snap["exits"][:10])
+        _print(f"[red]EXIT[/red] {ex} (12-1 음수 또는 200일선 이탈)" if RICH
+               else f"EXIT: {ex}")
+    for n in snap["notes"]:
+        _print(f"[dim]· {n}[/dim]" if RICH else f"· {n}")
+    src = "캐시" if snap.get("from_cache") else "새로 계산"
+    _print(f"[dim]데이터: Yahoo · {src} · {snap['cache_ttl_hours']}시간 캐시 · "
+           f"페이지: python cli.py nasdaq --serve[/dim]" if RICH else
+           f"데이터: Yahoo · {src} · 페이지: python cli.py nasdaq --serve")
+    return 0
+
+
+def _pct_str(v) -> str:
+    return "—" if v is None else f"{v:+.1f}%"
+
+
+def _num_str(v, digits: int = 2) -> str:
+    return "—" if v is None else f"{v:,.{digits}f}"
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="knot.e", description="knot.e 자산관리 오케스트레이터")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -339,13 +422,22 @@ def main(argv=None):
     pd.add_argument("--dry-run", action="store_true", help="API 없이 정량 스캔 + 프롬프트만")
     pd.add_argument("--json", action="store_true", help="원본 JSON 출력")
 
+    pn = sub.add_parser("nasdaq", help="AMQS-NDX — 나스닥 4-Factor 모멘텀 대시보드")
+    pn.add_argument("--serve", action="store_true", help="로컬 웹서버로 페이지 띄우기")
+    pn.add_argument("--host", default="127.0.0.1", help="서버 호스트 (기본 127.0.0.1)")
+    pn.add_argument("--port", type=int, default=8765, help="서버 포트 (기본 8765)")
+    pn.add_argument("--out", help="페이지를 HTML 파일로 저장 (예: output/amqs-ndx.html)")
+    pn.add_argument("--refresh", action="store_true", help="4시간 캐시를 무시하고 재계산")
+    pn.add_argument("--demo", action="store_true", help="합성 데이터로 레이아웃만 확인(네트워크 불필요)")
+    pn.add_argument("--json", action="store_true", help="스냅샷 JSON 출력")
+
     args = parser.parse_args(argv)
     orch = Orchestrator.build()
 
     dispatch = {
         "doctor": cmd_doctor, "portfolio": cmd_portfolio, "watchlist": cmd_watchlist,
         "analyze": cmd_analyze, "research": cmd_research, "score": cmd_research,
-        "daily": cmd_daily,
+        "daily": cmd_daily, "nasdaq": cmd_nasdaq,
     }
     return dispatch[args.cmd](orch, args) or 0
 

@@ -64,6 +64,39 @@ class MarketData:
         except Exception:
             return None
 
+    def history_closes_batch(self, tickers: list[str], period: str = "1y") -> dict[str, list[float] | None]:
+        """여러 티커의 종가를 한 번에 받는다(대시보드용). 실패분은 개별 조회로 보완."""
+        out: dict[str, list[float] | None] = {t: None for t in tickers}
+        if self.provider != "yfinance" or not tickers:
+            return out
+        df = None
+        try:
+            import yfinance as yf
+            df = yf.download(tickers=" ".join(tickers), period=period, auto_adjust=True,
+                             progress=False, group_by="ticker", threads=True)
+        except Exception:
+            df = None
+        if df is not None and not getattr(df, "empty", True):
+            multi = hasattr(df.columns, "levels")
+            for t in tickers:
+                try:
+                    if multi:
+                        if t not in df.columns.levels[0]:
+                            continue
+                        series = df[t]["Close"]
+                    elif len(tickers) == 1 and "Close" in df:
+                        series = df["Close"]
+                    else:
+                        continue
+                    closes = [float(x) for x in series.tolist() if x == x]  # NaN 제거
+                    out[t] = closes or None
+                except Exception:
+                    continue
+        for t in tickers:  # 배치에서 빠진 티커만 개별 재시도
+            if out[t] is None:
+                out[t] = self.history_closes(t, period=period)
+        return out
+
     # --- yfinance 구현 ---
     def _yf_quote(self, ticker: str, with_fundamentals: bool) -> Quote:
         try:

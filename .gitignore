@@ -18,6 +18,7 @@ output/
 research/cron.log
 data/holdings.local.json
 data/portfolio_state.json
+data/cache/
 
 # --- OS / editor ---
 .DS_Store

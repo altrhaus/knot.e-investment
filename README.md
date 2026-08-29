@@ -17,6 +17,7 @@ holdings ────┼─▶  knot.e  ─▶  Claude(정성판단)  ─▶  �
 - `python cli.py research LEU` → **정량(RSI·이평선·트리거) + 정성(W12 백팀 자격)을 통합**한 종목 판단
 - `python cli.py analyze <브리핑>` → 뉴스를 프레임워크로 해석한 리포트
 - `python cli.py portfolio` / `watchlist` → 보유·후보 종목 + 실시간 시세를 층별로 표시
+- `python cli.py nasdaq --serve` → **AMQS-NDX 나스닥 퀀트 대시보드**(웹페이지, 4시간 캐시)
 - `python cli.py doctor` → 설정/키가 준비됐는지 점검
 
 > **정량 + 정성을 같이 본다.** knot.e는 숫자(RSI·이평선·매출성장·FCF·P/S)와
@@ -91,6 +92,12 @@ pbpaste | python cli.py daily - --notify --out output/2026-07-10.txt
 python cli.py research LEU
 python cli.py research BWXT --json
 
+# ── 나스닥 퀀트 대시보드 (AMQS-NDX) ──
+python cli.py nasdaq                 # 터미널 요약
+python cli.py nasdaq --serve         # http://127.0.0.1:8765 페이지
+python cli.py nasdaq --out output/amqs-ndx.html   # 정적 HTML 저장
+python cli.py nasdaq --demo          # 네트워크 없이 레이아웃 확인
+
 # ── 핵심: 시황 브리핑 해석 ──
 python cli.py analyze examples/briefing-2026-07-03.txt --date 2026-07-03
 pbpaste | python cli.py analyze -            # (맥: 클립보드를 바로)
@@ -103,6 +110,16 @@ python cli.py research LEU --dry-run
 `analyze` 출력 예시 (형식): `examples/analysis-2026-07-03.sample.json` 참고. 실제 리포트는
 `[보유 종목 알림] / [백팀 기회 신호] / [매크로 → 3층 구조] / [종합 판단]` 구조로 나온다.
 
+### AMQS-NDX — 나스닥 4-Factor 모멘텀 대시보드
+QQQ 레짐 · 4-Factor 채점(모멘텀40/추세25/RS15/리스크10/거시10) · 실적 갭 필터 ·
+켈리 기준 Top-8 배분을 한 페이지로 보여준다. 방법론은
+**[docs/AMQS-NDX.md](docs/AMQS-NDX.md)**, 유니버스는 `data/nasdaq-universe.json`
+(41종 · 세그먼트 · 아키타입 A~D)에서 고친다. 데이터는 Yahoo(yfinance) 4시간 캐시.
+
+```bash
+python cli.py nasdaq --serve         # → http://127.0.0.1:8765
+```
+
 ### 매일 리서치 자동화
 매일 자동으로 돌리는 두 가지 방법(로컬 cron / Claude 에이전트 스케줄)과 리포트 전달
 채널은 **[docs/DAILY_RESEARCH.md](docs/DAILY_RESEARCH.md)** 참고. 로컬은 `scripts/run_daily.sh`,
@@ -113,7 +130,7 @@ python cli.py research LEU --dry-run
 ## 프로젝트 구조
 ```
 knot.e-investment/
-├── cli.py                  # 진입점 (doctor/portfolio/watchlist/analyze/research/daily)
+├── cli.py                  # 진입점 (doctor/portfolio/watchlist/analyze/research/daily/nasdaq)
 ├── knot/                   # 오케스트레이터 코어
 │   ├── orchestrator.py     #   도구 조율
 │   ├── analyst.py          #   Claude 판단 엔진
@@ -122,12 +139,17 @@ knot.e-investment/
 │   ├── portfolio.py        #   holdings/watchlist
 │   ├── market_data.py      #   시세/재무/가격히스토리 (yfinance)
 │   ├── quant.py            #   정량 엔진 — RSI·이평선·추세·매수트리거
+│   ├── amqs.py             #   AMQS-NDX — 나스닥 4-Factor 모멘텀 엔진
+│   ├── amqs_page.py        #   AMQS-NDX 대시보드 HTML 렌더러
+│   ├── amqs_server.py      #   AMQS-NDX 로컬 웹서버(표준 라이브러리)
 │   ├── notify.py           #   텔레그램
 │   └── render.py           #   판단 → 리포트
 ├── frameworks/             # ★ 판단 렌즈 (원칙·W12·3층·유동성지도)
-├── data/                   # holdings.json / watchlist.json
+├── data/                   # holdings.json / watchlist.json / nasdaq-universe.json
 ├── config/settings.json    # 목표배분·모델·기술적트리거
 ├── examples/               # 샘플 브리핑 + 출력
+├── tests/                  # 엔진 테스트 (python -m unittest discover tests)
+├── docs/AMQS-NDX.md        # 나스닥 대시보드 방법론
 ├── SPEC.md                 # 아키텍처/비전
 └── .env.example            # 키 템플릿
 ```
@@ -138,6 +160,7 @@ knot.e-investment/
 - ✅ **Phase 1** 골격 — frameworks/ · holdings · 시세 · CLI
 - ✅ **Phase 2** 두뇌 — Claude 연동 · 브리핑→프레임워크 해석 · W12 채점
 - ✅ **Phase 2.5** 정량+정성 — 정량 엔진(RSI·이평선·트리거) · `research` 통합 판단 · `daily` 데일리 리서치
+- ✅ **Phase 2.7** 퀀트 대시보드 — AMQS-NDX(나스닥 4-Factor 모멘텀) 웹페이지
 - 🚧 **Phase 3** proactive — 텔레그램 알림 + **매일 리서치 자동 실행**(스케줄 트리거)
 - ⬜ **Phase 4** 실행 — QuantConnect(MCP) 연동, 페이퍼 검증 후 실계좌
 
