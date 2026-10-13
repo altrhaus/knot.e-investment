@@ -1,11 +1,11 @@
 {
-  "_note": "보유 종목. shares/avg_price는 Tara가 실제 값으로 채운다(null이면 손익 계산은 생략, 시세/시그널은 정상 동작). team: 청팀=3층 성장주, 백팀=2층 실물인프라.",
-  "updated": "2026-07-10",
+  "_note": "보유 종목. 2026-10-13 키움 잔고상세(외화·수수료포함) 스크린샷 기준으로 Tara 실제 보유 수치 반영. team: 청팀=3층 성장주, 백팀=2층 실물인프라, 기타=프레임워크상 자리 없는 꼬리 포지션.",
+  "updated": "2026-10-13",
   "base_currency": "USD",
   "cash": {
     "layer": 1,
     "amount": null,
-    "note": "1층 실탄 — 실제 현금 비중 입력 (급락 시 백팀 매수 여력)"
+    "note": "1층 실탄 — 예수금 탭 값 미입력(2026-10-13 스크린샷엔 종목별 탭만 있음). 급락 시 백팀 매수 여력."
   },
   "positions": [
     {
@@ -14,11 +14,13 @@
       "layer": 3,
       "team": "청팀",
       "role": "core",
-      "shares": null,
-      "avg_price": null,
+      "shares": 31,
+      "avg_price": 151.6331,
       "thesis": "AI 학습(training) 표준 설계자 (원칙 45). 코어 Hold.",
       "watch": "맞춤형 추론 ASIC(Broadcom Jalapeño, Anthropic-삼성) 경쟁 누적 — 추론 시장 표준 분산 추적.",
-      "watch_principles": ["45"]
+      "watch_principles": [
+        "45"
+      ]
     },
     {
       "ticker": "PLTR",
@@ -26,11 +28,13 @@
       "layer": 3,
       "team": "청팀",
       "role": "core",
-      "shares": null,
-      "avg_price": null,
+      "shares": 60,
+      "avg_price": 12.7205,
       "thesis": "AI 오케스트레이션/통제 레이어 해자 (원칙 46).",
       "watch": "일부 정부 고객 오픈소스 AI 이전 신호 — 통제 레이어 유효성 모니터링.",
-      "watch_principles": ["46"]
+      "watch_principles": [
+        "46"
+      ]
     },
     {
       "ticker": "PL",
@@ -38,8 +42,8 @@
       "layer": 3,
       "team": "청팀",
       "role": "growth",
-      "shares": null,
-      "avg_price": null,
+      "shares": 34,
+      "avg_price": 16.0688,
       "thesis": "위성 지구관측 데이터 성장주. 할인율(금리) 민감.",
       "watch": "밸류에이션 압박 / 희석(유상증자) 리스크.",
       "watch_principles": []
@@ -50,10 +54,74 @@
       "layer": 3,
       "team": "청팀",
       "role": "growth",
-      "shares": null,
-      "avg_price": null,
+      "shares": 70,
+      "avg_price": 8.65,
       "thesis": "우주 인프라 성장주. 고베타.",
       "watch": "밸류에이션 압박 / 현금흐름·희석 리스크.",
+      "watch_principles": []
+    },
+    {
+      "ticker": "IRDM",
+      "name": "Iridium Communications",
+      "layer": 2,
+      "team": "백팀",
+      "role": "core",
+      "shares": 30,
+      "avg_price": 19.2,
+      "thesis": "LEO 위성통신 66기 + 주파수 실물 해자, FCF 흑자, DoD 장기계약. 보유 중 유일한 백팀 성격 종목 — W12 정식 채점 필요(F3 매출성장 약함).",
+      "watch": "Starlink D2D(스마트폰 직접통신) 경쟁 / Rocket Lab 파트너십 진행.",
+      "watch_principles": [
+        "45"
+      ]
+    },
+    {
+      "ticker": "SMR",
+      "name": "NuScale Power",
+      "layer": 2,
+      "team": "백팀",
+      "role": "speculative",
+      "shares": 45,
+      "avg_price": 15.9577,
+      "thesis": "원자력(SMR) 테마. 단 매출 미미·반복 희석으로 W12 F3·F4 미충족 → 백팀 '자격' 없음. 같은 테마의 LEU/BWXT로 교체 검토 대상.",
+      "watch": "첫 상업 수주/현금소진 속도. 유상증자 공시.",
+      "watch_principles": [
+        "33"
+      ]
+    },
+    {
+      "ticker": "PONY",
+      "name": "Pony AI (ADR)",
+      "layer": 3,
+      "team": "청팀",
+      "role": "speculative",
+      "shares": 10,
+      "avg_price": 14.11,
+      "thesis": "자율주행 ADR. 프레임워크 테제 없음 — 정리 후보.",
+      "watch": "",
+      "watch_principles": []
+    },
+    {
+      "ticker": "MARA",
+      "name": "MARA Holdings",
+      "layer": 3,
+      "team": "기타",
+      "role": "speculative",
+      "shares": 40,
+      "avg_price": 22.459,
+      "thesis": "비트코인 채굴 = BTC 베타. 3층 구조 어느 층에도 해당 없음 — 정리 후보.",
+      "watch": "",
+      "watch_principles": []
+    },
+    {
+      "ticker": "TNXP",
+      "name": "Tonix Pharmaceuticals",
+      "layer": 3,
+      "team": "기타",
+      "role": "speculative",
+      "shares": 10,
+      "avg_price": 44.53,
+      "thesis": "바이오. 프레임워크 테제 없음 — 정리 후보.",
+      "watch": "",
       "watch_principles": []
     }
   ]
